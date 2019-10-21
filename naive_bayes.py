@@ -6,6 +6,7 @@ __date__   = "20191005"
 
 import numpy as np
 import pdb
+from sklearn.naive_bayes import BernoulliNB
 
 np.random.seed(2019)
 
@@ -28,13 +29,27 @@ class BernoulliNaiveBayes:
         """
 
         # learn the p(y=1) and p(y=0)
-        # self.p_y1 = 
-        # self.p_y0 = 
+        m = y_train.shape[0]
+        self.p_y1 = np.sum(y_train == 1)/m
+        self.p_y0 = np.sum(y_train == 0)/m
+
 
         # learn the p(x|y=0), p(x|y=1), they should be a vector with shape (# of feature, ).
-        # self.p_x_y0 = 
-        # self.p_x_y1 = 
+        matrix_y_train = np.array([y_train, ] * x_train.shape[1]).transpose()
+        xy1 = np.logical_and(x_train == 1, matrix_y_train == 1)
+        y1 = (y_train == 1)
+        self.p_x_y1 = (np.sum(xy1, axis=0) + 1)/(np.sum(y1) + 2)
+        xy0 = np.logical_and(x_train == 1, matrix_y_train == 0)
+        y0 = (y_train == 0)
+        self.p_x_y0 = (np.sum(xy0, axis=0) + 1)/(np.sum(y0) + 2)
 
+
+        # xy1 = np.logical_and(x_train[:, j] == 1, y_train == 1)
+        # y1 = (y_train == 1)
+        # self.p_x_y1 = (sum(xy1) + 1) / (sum(y1) + 2)
+        # xy0 = np.logical_and(x_train[:, j] == 1, y_train == 0)
+        # y0 = (y_train == 0)
+        # self.p_x_y0 = (sum(xy0) + 1) / (sum(y0) + 2)
 
     def predict(self, x_test):
         """Do prediction via the learnt model.
@@ -53,6 +68,13 @@ class BernoulliNaiveBayes:
         # do inference to obtain p(y=0|x) and p(y=1|x),
         # then compare them to get the prediction.
 
+        p_y0_x = np.log(self.p_y0) + np.sum(np.log(self.p_x_y0)) - (np.sum(self.p_x_y1*self.p_y1) + np.sum(self.p_x_y0*self.p_y0))
+        p_y1_x = np.log(self.p_y1) + np.sum(np.log(self.p_x_y1)) - (np.sum(self.p_x_y1*self.p_y1) + np.sum(self.p_x_y0*self.p_y0))
+
+        if p_y0_x > p_y1_x:
+            pred = 1
+        else:
+            pred = 0
         return pred
 
 def load_data(data_path="a1a.txt"):
@@ -99,8 +121,15 @@ if __name__ == '__main__':
     pred = clf.predict(x_test)
 
     test_acc = acc_func(pred, y_test)
-    print("You model acquires Test Acc:{:.2f} %".format(test_acc))
 
+    clf_skl = BernoulliNB()
+    clf_skl.fit(x_train, y_train)
+    pred_skl = clf_skl.predict(x_test)
+    test_acc_skl = acc_func(pred_skl, y_test)
+
+    print("Your model acquires Test Acc:{:.2f} %".format(test_acc))
+
+    print("sklearn model acquires Test Acc:{:.2f} %".format(test_acc_skl))
     if test_acc > 75:
         print("Congratulations! Your Naive Bayes classifier WORKS!")
     else:
